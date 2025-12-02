@@ -1,0 +1,10 @@
+../Core/Src/lcd_no_i2c.c:11:20:pul_enable	24	static
+../Core/Src/lcd_no_i2c.c:19:13:write_4bit	16	static
+../Core/Src/lcd_no_i2c.c:27:13:send_command	16	static
+../Core/Src/lcd_no_i2c.c:34:13:send_data	16	static
+../Core/Src/lcd_no_i2c.c:41:6:lcd_init	16	static
+../Core/Src/lcd_no_i2c.c:72:6:lcd_clear	16	static
+../Core/Src/lcd_no_i2c.c:77:6:lcd_gotoxy	24	static
+../Core/Src/lcd_no_i2c.c:83:6:lcd_sendchar	16	static
+../Core/Src/lcd_no_i2c.c:87:6:lcd_sendstring	16	static
+../Core/Src/lcd_no_i2c.c:91:6:lcd_sendnumber	24	static

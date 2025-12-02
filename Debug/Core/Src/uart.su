@@ -1,0 +1,7 @@
+../Core/Src/uart.c:29:13:compute_lps	32	static
+../Core/Src/uart.c:50:14:strstr_kmp	56	dynamic
+../Core/Src/uart.c:74:13:uart_receive_data	16	static
+../Core/Src/uart.c:85:14:parse_number	32	static
+../Core/Src/uart.c:110:6:HAL_UART_RxCpltCallback	16	static
+../Core/Src/uart.c:117:6:uart_init	16	static
+../Core/Src/uart.c:121:6:uart_handle	24	static
