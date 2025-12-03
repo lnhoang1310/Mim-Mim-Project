@@ -37,7 +37,7 @@ struct{
 uint16_t Button_Pressing(void){
     uint32_t now = HAL_GetTick();
 
-    for (int i = 0; i < 5; i++){
+    for (int i = 0; i < 3; i++){
         uint8_t state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
         ButtonState *btn = buttons[i].state;
         if (state != btn->last_state) {
