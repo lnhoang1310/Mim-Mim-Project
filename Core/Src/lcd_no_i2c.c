@@ -10,9 +10,9 @@
 
 static inline void pul_enable(LCD_Typedef* lcd)
 {
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_SET);
-    HAL_Delay(1);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_SET);
+	for(uint8_t i=0; i<50; i++);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_RESET);
 }
 
 static void write_4bit(LCD_Typedef* lcd, uint8_t nibble){
@@ -37,34 +37,39 @@ static void send_data(LCD_Typedef* lcd, uint8_t data){
 
 void lcd_init(LCD_Typedef* lcd)
 {
-    // Reset tất cả các chân
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->d4, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->d5, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->d6, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->d7, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(lcd->lcd_port, lcd->rs, GPIO_PIN_RESET);
-    if(lcd->rw) HAL_GPIO_WritePin(lcd->lcd_port, lcd->rw, GPIO_PIN_RESET);
+	// Reset tất cả các chân
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->d4, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->d5, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->d6, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->d7, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(lcd->lcd_port, lcd->rs, GPIO_PIN_RESET);
+	if(lcd->rw) HAL_GPIO_WritePin(lcd->lcd_port, lcd->rw, GPIO_PIN_RESET);
 
-    HAL_Delay(50);
+	HAL_Delay(50);
 
-    // Khởi tạo 4-bit theo datasheet
-//    write_4bit(lcd, 0x03);
-//    HAL_Delay(5);
-//    write_4bit(lcd, 0x03);
-//    HAL_Delay(1);
-//    write_4bit(lcd, 0x03);
-//    HAL_Delay(1);
-//    write_4bit(lcd, 0x02);  // Chuyển sang 4-bit mode
-//    HAL_Delay(1);
-    send_command(lcd, 0x33);
-    send_command(lcd, 0x32);
+	// Khởi tạo 4-bit theo datasheet
+	write_4bit(lcd, 0x03);
+	HAL_Delay(5);
+	write_4bit(lcd, 0x03);
+	HAL_Delay(1);
+	write_4bit(lcd, 0x03);
+	HAL_Delay(1);
+	write_4bit(lcd, 0x02);  // Chuyển sang 4-bit mode
+	HAL_Delay(1);
+	//    send_command(lcd, 0x33);
+	//    send_command(lcd, 0x32);
 
-    send_command(lcd, 0x28); // 4-bit, 2 line, 5x8 font
-    send_command(lcd, 0x0C); // display off
-    send_command(lcd, 0x06); // entry mode
-    send_command(lcd, 0x01); // clear
-    HAL_Delay(2);
+	send_command(lcd, 0x28);  // 4-bit mode, 2 lines, 5x8 font
+	HAL_Delay(1);
+	send_command(lcd, 0x08);  // Display off, cursor off, blink off
+	HAL_Delay(1);
+	send_command(lcd, 0x01);  // Clear display
+	HAL_Delay(2);
+	send_command(lcd, 0x06);  // Entry mode: cursor moves right
+	HAL_Delay(1);
+	send_command(lcd, 0x0C);  // Display on, cursor off, blink off
+	HAL_Delay(10);
 }
 
 void lcd_clear(LCD_Typedef* lcd){
@@ -74,8 +79,8 @@ void lcd_clear(LCD_Typedef* lcd){
 
 void lcd_gotoxy(LCD_Typedef* lcd, uint8_t col, uint8_t row){
 	const uint8_t row_offsets[] = {0x00, 0x40, 0x14, 0x54};
-    if(row > 3) row = 3;
-    send_command(lcd, 0x80 | (col + row_offsets[row]));
+	if(row > 3) row = 3;
+	send_command(lcd, 0x80 | (col + row_offsets[row]));
 }
 
 void lcd_sendchar(LCD_Typedef* lcd, char c){
