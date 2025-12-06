@@ -11,7 +11,7 @@
 static inline void pul_enable(LCD_Typedef* lcd)
 {
 	HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_SET);
-	for(uint8_t i=0; i<50; i++);
+	HAL_Delay(1);
 	HAL_GPIO_WritePin(lcd->lcd_port, lcd->en, GPIO_PIN_RESET);
 }
 

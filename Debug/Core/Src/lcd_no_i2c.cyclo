@@ -1,4 +1,4 @@
-../Core/Src/lcd_no_i2c.c:11:20:pul_enable	2
+../Core/Src/lcd_no_i2c.c:11:20:pul_enable	1
 ../Core/Src/lcd_no_i2c.c:18:13:write_4bit	1
 ../Core/Src/lcd_no_i2c.c:26:13:send_command	1
 ../Core/Src/lcd_no_i2c.c:32:13:send_data	1

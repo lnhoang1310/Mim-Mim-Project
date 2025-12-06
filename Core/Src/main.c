@@ -165,7 +165,7 @@ void process(void){
 }
 void display(){
 	lcd_gotoxy(&lcd, 0, 0); lcd_sendstring(&lcd, "TEMP: "); lcd_sendnumber(&lcd, temperature_current); lcd_sendstring(&lcd, "C ");
-	lcd_sendstring(&lcd, (fan_speed == 0) ? "OFF" : ((fan_speed < 40) ? "LOW" : ((fan_speed >= 40 && fan_speed <= 75) ? "MED" : "FAST")));
+	lcd_sendstring(&lcd, (fan_speed == 0) ? "OFF " : ((fan_speed < 40) ? "LOW " : ((fan_speed >= 40 && fan_speed <= 75) ? "MED " : "FAST")));
 	lcd_gotoxy(&lcd, 0, 1); lcd_sendstring(&lcd, "SET: ");
 	display_mode();
 }
@@ -207,7 +207,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start(&htim3);
 	Led_Init();
-	Fan_Init(&htim1, TIM_CHANNEL_1, IN1_GPIO_Port, IN1_Pin, IN2_GPIO_Port, IN2_Pin);
+	Fan_Init(&htim1, TIM_CHANNEL_1);
 	uart_init(&huart1);
 	lcd_init(&lcd);
 	lm35_init(&lm35, &hadc1);
@@ -220,11 +220,7 @@ int main(void)
 		if(uart_handle()) is_manual_control = true;
 		process();
 		lm35_getTemp(&lm35);
-
 		temperature_current = lm35.temp;
-		//		if(HAL_GetTick() - time_delay_dht11 >= 200){
-		//			dht11_get_data(&temperature_current, &hum_current);
-		//			time_delay_dht11 = HAL_GetTick();
 		if(is_manual_control){
 			if(temperature_current < temperature_set)
 				is_manual_control = false;
@@ -232,6 +228,7 @@ int main(void)
 		if(!is_manual_control){
 			float diff_temp = temperature_current - temperature_set;
 			fan_speed = (diff_temp > 0) ? (diff_temp * 10) : 0;
+			if(fan_speed > 100) fan_speed = 100;
 			Fan_Control(fan_speed);
 		}
 		//		}
@@ -361,9 +358,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 99;
+  htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 4999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -503,7 +500,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DHT11_Pin|IN2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LED1_Pin|LED2_Pin|LED3_Pin|LCD_RW_Pin
@@ -523,19 +520,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(DHT11_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : IN1_Pin */
-  GPIO_InitStruct.Pin = IN1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(IN1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : IN2_Pin */
-  GPIO_InitStruct.Pin = IN2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(IN2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED1_Pin LED2_Pin LED3_Pin LCD_RW_Pin
                            LCD_D4_Pin LCD_D5_Pin LCD_D6_Pin LCD_D7_Pin
