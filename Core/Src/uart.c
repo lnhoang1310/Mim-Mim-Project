@@ -6,7 +6,6 @@
  */
 
 #include "uart.h"
-#include <stdbool.h>
 #include <string.h>
 #include "fan.h"
 #include "main.h"
@@ -21,9 +20,6 @@ uint8_t uart_buffer[UART_BUFFER_LEN];
 uint8_t uart_buffer_index = 0;
 bool uart_flag_cplt_receive = 0;
 uint8_t data_rx;
-
-#include <stddef.h>
-#include <string.h>
 
 // T?o b?ng lps (longest prefix suffix)
 static void compute_lps(const char *pat, uint16_t m, uint16_t *lps)

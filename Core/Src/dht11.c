@@ -1,115 +1,93 @@
-/*
- * dht11.c
- *
- *  Created on: Dec 3, 2025
- *      Author: Hoàng Lâm
- */
-
 #include "dht11.h"
 
-static void DHT_DelayInit(DHT_Name* DHT)
-{
-	HAL_TIM_Base_Start(DHT->htim);
-}
-static void DHT_DelayUs(DHT_Name* DHT, uint16_t time)
-{
-	__HAL_TIM_SET_COUNTER(DHT->htim,0);
-	while(__HAL_TIM_GET_COUNTER(DHT->htim)<time){}
-}
+extern TIM_HandleTypeDef htim3;
 
-static void DHT_SetPinOut(DHT_Name* DHT)
-{
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = DHT->Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(DHT->PORT, &GPIO_InitStruct);
+float nhiet_do;
+float do_am;
+uint8_t rh_byte1;
+uint8_t rh_byte2;
+uint8_t temp_byte1;
+uint8_t temp_byte2;
+uint16_t sum;
+uint8_t presence;
+void delay_us(uint32_t time) {
+    htim3.Instance->CNT = 0;
+    while (htim3.Instance->CNT < time);
 }
 
-static void DHT_SetPinIn(DHT_Name* DHT)
-{
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = DHT->Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	HAL_GPIO_Init(DHT->PORT, &GPIO_InitStruct);
+void dht11_set_output() {
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = DHT11_Pin;
+    gpio.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(DHT11_GPIO_Port, &gpio);
 }
 
-static void DHT_WritePin(DHT_Name* DHT, GPIO_PinState Value)
-{
-	HAL_GPIO_WritePin(DHT->PORT, DHT->Pin, Value);
+void dht11_set_input() {
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = DHT11_Pin;
+    gpio.Mode = GPIO_MODE_INPUT;
+    gpio.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(DHT11_GPIO_Port, &gpio);
 }
 
-static uint8_t DHT_ReadPin(DHT_Name* DHT)
-{
-	uint8_t Value;
-	Value =  HAL_GPIO_ReadPin(DHT->PORT, DHT->Pin);
-	return Value;
+void dht11_start() {
+    dht11_set_output();
+    HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_SET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
+    HAL_Delay(20);
+    HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_SET);
+    delay_us(30);
+    dht11_set_input();
 }
 
-static uint8_t DHT_Start(DHT_Name* DHT)
-{
-	uint8_t Response = 0;
-	DHT_SetPinOut(DHT);
-	DHT_WritePin(DHT, GPIO_PIN_RESET);
-	DHT_DelayUs(DHT, DHT11_STARTTIME);
-	DHT_SetPinIn(DHT);
-	DHT_DelayUs(DHT, 40);
-	if (!DHT_ReadPin(DHT))
-	{
-		DHT_DelayUs(DHT, 40);
-		if(DHT_ReadPin(DHT))
-		{
-			Response = 1;
-		}
-		else Response = 0;
-	}
-	while(DHT_ReadPin(DHT));
-
-	return Response;
-}
-static uint8_t DHT_Read(DHT_Name* DHT)
-{
-	uint8_t Value = 0;
-	DHT_SetPinIn(DHT);
-	for(int i = 0; i<8; i++)
-	{
-		while(!DHT_ReadPin(DHT));
-		DHT_DelayUs(DHT, 40);
-		if(!DHT_ReadPin(DHT))
-		{
-			Value &= ~(1<<(7-i));
-		}
-		else Value |= 1<<(7-i);
-		while(DHT_ReadPin(DHT));
-	}
-	return Value;
+uint8_t dht11_check_response() {
+    uint8_t response = 0;
+    delay_us(40);
+    if (!HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin)) {
+        delay_us(80);
+        if (HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin)) {
+            response = 1;
+        }
+    }
+    while (HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin));
+    return response;
 }
 
-void DHT_Init(DHT_Name* DHT, TIM_HandleTypeDef* htim, GPIO_TypeDef* DH_PORT, uint16_t DH_Pin)
-{
-	DHT->PORT = DH_PORT;
-	DHT->Pin = DH_Pin;
-	DHT->htim = htim;
-	DHT_DelayInit(DHT);
+uint8_t dht11_read(void) {
+    uint8_t i = 0;
+    for (uint8_t j = 0; j < 8; j++) {
+        while (!HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin));
+        delay_us(40);
+        if (!HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin)) {
+            i &= ~(1 << (7 - j));
+        } else {
+            i |= (1 << (7 - j));
+        }
+        while (HAL_GPIO_ReadPin(DHT11_GPIO_Port, DHT11_Pin));
+    }
+    return i;
 }
 
-uint8_t DHT_ReadTempHum(DHT_Name* DHT)
-{
-	uint8_t Temp1, Temp2, RH1, RH2;
-	uint16_t Temp, Humi, SUM = 0;
-	DHT_Start(DHT);
-	RH1 = DHT_Read(DHT);
-	RH2 = DHT_Read(DHT);
-	Temp1 = DHT_Read(DHT);
-	Temp2 = DHT_Read(DHT);
-	SUM = DHT_Read(DHT);
-	Temp = (Temp1<<8) | Temp2;
-	Humi = (RH1<<8) | RH2;
-	DHT->Temp = (float)(Temp/10.0);
-	DHT->Humi = (float)(Humi/10.0);
-	return SUM;
+void dht11_get_data(float* temperature, float* humidity) {
+    dht11_start();
+    presence = dht11_check_response();
+    if (presence) {
+        rh_byte1 = dht11_read();
+        rh_byte2 = dht11_read();
+        temp_byte1 = dht11_read();
+        temp_byte2 = dht11_read();
+        sum = dht11_read();
+        if (sum == (rh_byte1 + rh_byte2 + temp_byte1 + temp_byte2)) {
+            *temperature = temp_byte1 + temp_byte2 / 10;
+            *humidity = rh_byte1 + rh_byte2 / 10;
+        } else {
+            *temperature = -1;
+            *humidity = -1;
+        }
+    } else {
+        *temperature = -1;
+        *humidity = -1;
+    }
 }
-
-
-

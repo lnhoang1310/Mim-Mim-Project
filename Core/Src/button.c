@@ -34,18 +34,19 @@ struct{
 	{BUTTON_RIGHT_GPIO_Port, BUTTON_RIGHT_Pin, &btn_right}
 };
 
-uint16_t Button_Pressing(void){
+uint16_t Button_Pressing(void)
+{
     uint32_t now = HAL_GetTick();
-
-    for (int i = 0; i < 3; i++){
-        uint8_t state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
+    for(int i = 0; i < 3; i++){
         ButtonState *btn = buttons[i].state;
-        if (state != btn->last_state) {
-            if(now - btn->last_time > DEBOUNCE_TIME){
-                btn->last_time = now;
-                btn->last_state = state;
+        uint8_t raw = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
 
-                if(state == GPIO_PIN_RESET) {
+        if(raw != btn->last_state){
+            if(now - btn->last_time >= DEBOUNCE_TIME){
+                btn->last_state = raw;
+                btn->last_time = now;
+
+                if(raw == GPIO_PIN_RESET){
                     btn->hold_start = now;
                     btn->is_held = 0;
                     return buttons[i].pin;
@@ -53,15 +54,13 @@ uint16_t Button_Pressing(void){
                     btn->is_held = 0;
                 }
             }
-        }
-        else if(state == GPIO_PIN_RESET){
-            if(!btn->is_held && (now - btn->hold_start > HOLD_TIME)){
+        }else if(raw == GPIO_PIN_RESET){
+            if(!btn->is_held && (now - btn->hold_start >= HOLD_TIME)){
                 btn->is_held = 1;
                 btn->last_time = now;
                 return buttons[i].pin;
             }
-
-            if(btn->is_held && (now - btn->last_time > REPEAT_INTERVAL)){
+            if(btn->is_held && (now - btn->last_time >= REPEAT_INTERVAL)){
                 btn->last_time = now;
                 return buttons[i].pin;
             }
